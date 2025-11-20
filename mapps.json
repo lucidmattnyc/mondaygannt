@@ -1,22 +1,27 @@
 {
   "name": "Enhanced Gantt Chart Widget",
   "description": "Advanced Gantt chart with full mirror column support, enabling color by, group by, and sort by functionality for any data from mirror columns",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "icon": "https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/remote_mondaycom_static/img/menu/gantt.svg",
   "shortDescription": "Enhanced Gantt chart with mirror column support",
   "supportedLanguages": ["en"],
   "features": [
     {
+      "type": "BoardViewsFeature",
+      "name": "Enhanced Gantt View",
+      "displayName": "Enhanced Gantt"
+    },
+    {
       "type": "DashboardWidgetsFeature",
-      "name": "Enhanced Gantt Chart",
-      "url": "https://your-domain.com"
+      "name": "Enhanced Gantt Widget",
+      "displayName": "Enhanced Gantt Chart"
     }
   ],
   "permissions": [
     "boards:read",
     "columns:read",
     "items:read",
-    "updates:read"
+    "groups:read"
   ],
   "scopes": [
     "boards:read",
