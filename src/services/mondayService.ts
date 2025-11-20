@@ -61,44 +61,67 @@ class MondayService {
   }
 
   async getCurrentBoard(): Promise<MondayBoard | null> {
-    const query = `
-      query {
-        boards(limit: 1, page: 1) {
-          id
-          name
-          description
-          board_kind
-          columns {
-            id
-            title
-            type
-            settings_str
-            archived
-          }
-          groups {
-            id
-            title
-            color
-            position
-          }
-        }
-      }
-    `;
-
     try {
       // Try to get board from context first
       const context = await this.monday.get('context');
+      console.log('getCurrentBoard context:', context);
+
       if (context.boardId) {
-        return this.getBoards([parseInt(context.boardId)]).then(boards => boards[0] || null);
+        console.log('Found boardId in context:', context.boardId);
+        const boards = await this.getBoards([parseInt(context.boardId)]);
+        return boards[0] || null;
       }
 
-      // Fallback to getting first accessible board
-      const response = await this.monday.api(query);
-      return response.data?.boards?.[0] || null;
+      // Try to extract board ID from URL
+      const urlBoardId = this.extractBoardIdFromUrl();
+      if (urlBoardId) {
+        console.log('Extracted boardId from URL:', urlBoardId);
+        const boards = await this.getBoards([parseInt(urlBoardId)]);
+        return boards[0] || null;
+      }
+
+      // Try to get board from location context
+      if (typeof window !== 'undefined' && window.location) {
+        const pathname = window.location.pathname;
+        const boardMatch = pathname.match(/\/boards\/(\d+)/);
+        if (boardMatch) {
+          const boardId = boardMatch[1];
+          console.log('Found boardId in pathname:', boardId);
+          const boards = await this.getBoards([parseInt(boardId)]);
+          return boards[0] || null;
+        }
+      }
+
+      console.warn('No board ID found in context or URL');
+      return null;
     } catch (error) {
       console.error('Error fetching current board:', error);
       return null;
     }
+  }
+
+  private extractBoardIdFromUrl(): string | null {
+    if (typeof window === 'undefined') return null;
+
+    const url = window.location.href;
+    console.log('Current URL:', url);
+
+    // Try multiple URL patterns
+    const patterns = [
+      /\/boards\/(\d+)/,
+      /boardId[=:](\d+)/,
+      /board_id[=:](\d+)/,
+      /boards%2F(\d+)/
+    ];
+
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) {
+        return match[1];
+      }
+    }
+
+    return null;
   }
 
   async getBoards(boardIds?: number[]): Promise<MondayBoard[]> {
@@ -311,7 +334,25 @@ class MondayService {
 
     try {
       const response = await this.monday.api(query);
-      return response.data?.boards || [];
+      const allBoards = response.data?.boards || [];
+
+      // Filter out subitem boards and boards we don't want to show
+      const filteredBoards = allBoards.filter((board: MondayBoard) => {
+        // Exclude subitem boards (they usually have "Subitems of" prefix)
+        if (board.name && board.name.toLowerCase().includes('subitems of')) {
+          return false;
+        }
+
+        // Exclude certain board kinds if needed
+        if (board.board_kind === 'private' || board.board_kind === 'share') {
+          return false;
+        }
+
+        return true;
+      });
+
+      console.log('Filtered boards:', filteredBoards);
+      return filteredBoards;
     } catch (error) {
       console.error('Error fetching connected boards:', error);
       return [];
