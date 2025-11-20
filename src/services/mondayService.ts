@@ -17,11 +17,36 @@ class MondayService {
   async initializeWidget(): Promise<WidgetContext> {
     try {
       const context = await this.monday.get('context');
+      console.log('Monday context:', context);
+
+      let boardIds: number[] = [];
+      let viewMode = 'dashboard';
+
+      // Handle different contexts
+      if (context.boardId) {
+        // Single board context (Board View)
+        boardIds = [parseInt(context.boardId)];
+        viewMode = 'board';
+      } else if (context.boardIds && context.boardIds.length > 0) {
+        // Multiple boards context (Dashboard Widget)
+        boardIds = context.boardIds;
+        viewMode = 'dashboard';
+      } else if (context.instanceType === 'board_view') {
+        // Try to get board ID from URL or other context
+        viewMode = 'board';
+        // Get board ID from current location
+        const urlParams = new URLSearchParams(window.location.search);
+        const boardIdFromUrl = urlParams.get('boardId') || urlParams.get('board_id');
+        if (boardIdFromUrl) {
+          boardIds = [parseInt(boardIdFromUrl)];
+        }
+      }
+
       return {
         instanceId: context.instanceId,
-        boardIds: context.boardIds || [],
+        boardIds,
         theme: context.theme || 'light',
-        viewMode: context.viewMode || 'dashboard',
+        viewMode: viewMode as 'dashboard' | 'board',
         editMode: context.editMode || false
       };
     } catch (error) {
@@ -32,6 +57,47 @@ class MondayService {
         viewMode: 'dashboard',
         editMode: false
       };
+    }
+  }
+
+  async getCurrentBoard(): Promise<MondayBoard | null> {
+    const query = `
+      query {
+        boards(limit: 1, page: 1) {
+          id
+          name
+          description
+          board_kind
+          columns {
+            id
+            title
+            type
+            settings_str
+            archived
+          }
+          groups {
+            id
+            title
+            color
+            position
+          }
+        }
+      }
+    `;
+
+    try {
+      // Try to get board from context first
+      const context = await this.monday.get('context');
+      if (context.boardId) {
+        return this.getBoards([parseInt(context.boardId)]).then(boards => boards[0] || null);
+      }
+
+      // Fallback to getting first accessible board
+      const response = await this.monday.api(query);
+      return response.data?.boards?.[0] || null;
+    } catch (error) {
+      console.error('Error fetching current board:', error);
+      return null;
     }
   }
 

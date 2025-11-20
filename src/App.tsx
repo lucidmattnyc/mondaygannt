@@ -165,9 +165,27 @@ const App: React.FC = () => {
       let boardsToLoad: MondayBoard[] = [];
 
       if (widgetContext.boardIds && widgetContext.boardIds.length > 0) {
+        // We have specific board IDs (Dashboard Widget or Board View)
         boardsToLoad = await mondayService.getBoards(widgetContext.boardIds);
       } else {
-        boardsToLoad = await mondayService.getConnectedBoards();
+        // No board IDs provided, try to get current board (Board View fallback)
+        const currentBoard = await mondayService.getCurrentBoard();
+        if (currentBoard) {
+          boardsToLoad = [currentBoard];
+          // Update context with detected board ID
+          setContext({
+            ...widgetContext,
+            boardIds: [parseInt(currentBoard.id)]
+          });
+        } else {
+          // Last resort: get all connected boards
+          boardsToLoad = await mondayService.getConnectedBoards();
+        }
+      }
+
+      if (boardsToLoad.length === 0) {
+        setError('No boards found. Please ensure you have access to at least one board.');
+        return;
       }
 
       setBoards(boardsToLoad);
@@ -202,9 +220,22 @@ const App: React.FC = () => {
 
   const loadTasks = async () => {
     try {
-      const selectedBoardIds = settings.selectedBoards && settings.selectedBoards.length > 0
+      // Auto-select boards based on context
+      let selectedBoardIds = settings.selectedBoards && settings.selectedBoards.length > 0
         ? settings.selectedBoards
         : boards.map(board => board.id);
+
+      // In board view mode, automatically select the current board
+      if (context?.viewMode === 'board' && context.boardIds && context.boardIds.length > 0) {
+        selectedBoardIds = context.boardIds.map(id => id.toString());
+        // Update settings to reflect the current board
+        if (!settings.selectedBoards || settings.selectedBoards.length === 0) {
+          setSettings(prev => ({
+            ...prev,
+            selectedBoards: selectedBoardIds
+          }));
+        }
+      }
 
       if (selectedBoardIds.length === 0) {
         setTasks([]);
