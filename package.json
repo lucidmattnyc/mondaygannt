@@ -4,7 +4,7 @@
   "description": "Enhanced Gantt chart dashboard widget with full mirror column support",
   "main": "src/index.js",
   "scripts": {
-    "start": "webpack serve --mode development --open",
+    "start": "npm run build && serve -s build -l 8080",
     "build": "webpack --mode production",
     "dev": "webpack serve --mode development",
     "test": "jest",
@@ -18,23 +18,24 @@
     "moment": "^2.29.4",
     "styled-components": "^6.1.0",
     "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0"
-  },
-  "devDependencies": {
+    "@types/react-dom": "^18.2.0",
+    "serve": "^14.2.0",
     "@babel/core": "^7.22.0",
     "@babel/preset-env": "^7.22.0",
     "@babel/preset-react": "^7.22.0",
     "@babel/preset-typescript": "^7.22.0",
     "babel-loader": "^9.1.0",
     "css-loader": "^6.8.0",
-    "eslint": "^8.42.0",
-    "eslint-plugin-react": "^7.32.0",
     "html-webpack-plugin": "^5.5.0",
-    "jest": "^29.5.0",
     "style-loader": "^3.3.0",
     "typescript": "^5.1.0",
     "webpack": "^5.88.0",
-    "webpack-cli": "^5.1.0",
+    "webpack-cli": "^5.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.42.0",
+    "eslint-plugin-react": "^7.32.0",
+    "jest": "^29.5.0",
     "webpack-dev-server": "^4.15.0"
   },
   "keywords": ["monday.com", "gantt", "dashboard", "widget", "mirror-columns"],
